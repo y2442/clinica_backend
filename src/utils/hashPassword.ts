@@ -1,5 +1,8 @@
 //este script se ejecuta una sola vez para encriptar las contraseñas existentes en la base de datos.
 
+import dotenv from 'dotenv';
+dotenv.config();  // ← agrega esto antes de todo
+
 import bcrypt from 'bcryptjs';
 import { Usuarios } from '../models';
 import sequelize from '../config/database';

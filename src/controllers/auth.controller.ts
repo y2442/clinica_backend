@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Usuarios } from '../models';
-import { Roles } from '../models';
+import { Roles } from '../models'; 
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { nombre_usuario, contrasena } = req.body; 
