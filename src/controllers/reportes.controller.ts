@@ -16,7 +16,8 @@ export const reporteGeneral = async (req: Request, res: Response): Promise<void>
       // Por defecto el mes actual
       const hoy = new Date();
       const primerDia = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
-      const ultimoDia = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-31`;
+      const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+      const ultimoDia = `${finMes.getFullYear()}-${String(finMes.getMonth() + 1).padStart(2, '0')}-${String(finMes.getDate()).padStart(2, '0')}`;
       whereFecha.fecha_cita = { [Op.between]: [primerDia, ultimoDia] };
     }
 
@@ -26,7 +27,7 @@ export const reporteGeneral = async (req: Request, res: Response): Promise<void>
       where: whereFecha,
       include: [{ model: EstadoCitas, as: 'estado', attributes: ['nombre'] }],
       attributes: ['id_estado', [fn('COUNT', col('Citas.id_cita')), 'total']],
-      group: ['id_estado', 'estado.id_estado'],
+      group: ['Citas.id_estado', 'estado.id_estado', 'estado.nombre'],
     });
 
     //nuevos pacientes en el período
@@ -48,7 +49,14 @@ export const reporteGeneral = async (req: Request, res: Response): Promise<void>
         { model: EstadoCitas, as: 'estado', attributes: ['nombre'] },
       ],
       attributes: ['id_medico', [fn('COUNT', col('Citas.id_cita')), 'total']],
-      group: ['id_medico', 'medico.id_medico', 'estado.id_estado', 'estado.nombre'],
+      group: [
+        'Citas.id_medico',
+        'medico.id_medico',
+        'medico.nombre',
+        'medico.apellido',
+        'estado.id_estado',
+        'estado.nombre',
+      ],
     });
 
     //agrupar citas por médico con sus estados
@@ -58,7 +66,7 @@ export const reporteGeneral = async (req: Request, res: Response): Promise<void>
       if (!medicoMap[idMedico]) {
         medicoMap[idMedico] = {
           id_medico: idMedico,
-          nombre: `${c.medico.nombre} ${c.medico.apellido}`,
+          nombre: c.medico ? `${c.medico.nombre} ${c.medico.apellido}`.trim() : `Médico #${idMedico}`,
           total: 0,
           completadas: 0,
           canceladas: 0,
@@ -66,13 +74,13 @@ export const reporteGeneral = async (req: Request, res: Response): Promise<void>
           reprogramadas: 0,
         };
       }
-      const total = Number(c.dataValues.total);
+      const total = Number(c.dataValues.total || 0);
       medicoMap[idMedico].total += total;
-      const estado = c.estado.nombre;
-      if (estado === 'Completada') medicoMap[idMedico].completadas += total;
-      else if (estado === 'Cancelada') medicoMap[idMedico].canceladas += total;
-      else if (estado === 'Programada') medicoMap[idMedico].programadas += total;
-      else if (estado === 'Reprogramada') medicoMap[idMedico].reprogramadas += total;
+      const estado = c.estado?.nombre || '';
+      if (estado.toLowerCase() === 'completada') medicoMap[idMedico].completadas += total;
+      else if (estado.toLowerCase() === 'cancelada') medicoMap[idMedico].canceladas += total;
+      else if (estado.toLowerCase() === 'programada') medicoMap[idMedico].programadas += total;
+      else if (estado.toLowerCase() === 'reprogramada') medicoMap[idMedico].reprogramadas += total;
     }
 
     const resumenMedicos = Object.values(medicoMap).map((m: any) => ({
@@ -84,8 +92,8 @@ export const reporteGeneral = async (req: Request, res: Response): Promise<void>
       totalCitas,
       nuevosPacientes,
       citasPorEstado: citasPorEstado.map((c: any) => ({
-        estado: c.estado.nombre,
-        total: Number(c.dataValues.total),
+        estado: c.estado?.nombre || 'Sin Estado',
+        total: Number(c.dataValues.total || 0),
       })),
       resumenMedicos,
     });
