@@ -22,6 +22,7 @@ import EstadoCitas from './estado_citas';
 import Citas from './citas';
 import Tratamientos from './tratamientos';
 import CitasTratamientos from './citas_tratamientos';
+import MedicoEspecialidad from './medico_especialidad';
 
 // ─── Asociaciones ────────────────────────────────────────────
 
@@ -34,13 +35,13 @@ Medicos.belongsTo(Usuarios, { foreignKey: 'id_usuario', as: 'usuario' });
 
 // Medicos ↔ Especialidades (muchos a muchos)
 Medicos.belongsToMany(Especialidad, {
-  through: 'medico_especialidad',
+  through: MedicoEspecialidad,
   foreignKey: 'id_medico',
   otherKey: 'id_especialidad',
   as: 'especialidades',
 });
 Especialidad.belongsToMany(Medicos, {
-  through: 'medico_especialidad',
+  through: MedicoEspecialidad,
   foreignKey: 'id_especialidad',
   otherKey: 'id_medico',
   as: 'medicos',
@@ -82,4 +83,5 @@ export {
   Citas,
   Tratamientos,
   CitasTratamientos,
+  MedicoEspecialidad,
 };

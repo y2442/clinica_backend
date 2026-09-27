@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import {
   Medicos, Usuarios, Roles, Especialidad,
-  HorarioMedico, Citas, EstadoCitas
+  HorarioMedico, Citas, EstadoCitas, MedicoEspecialidad
 } from '../models';
 
 const DIAS_SEMANA: Record<number, string> = {
@@ -197,10 +197,19 @@ export const asignarEspecialidades = async (req: Request, res: Response): Promis
       return;
     }
 
-    //sequelize maneja la tabla medico_especialidad automáticamente
-    await (medico as any).setEspecialidades(especialidades);
+    await MedicoEspecialidad.destroy({ where: { id_medico: req.params.id } });
+
+    if (Array.isArray(especialidades) && especialidades.length > 0) {
+      const registros = especialidades.map((idEsp: number) => ({
+        id_medico: Number(req.params.id),
+        id_especialidad: Number(idEsp),
+      }));
+      await MedicoEspecialidad.bulkCreate(registros);
+    }
+
     res.json({ message: 'Especialidades actualizadas correctamente' });
   } catch (error) {
+    console.error('ERROR asignarEspecialidades:', error);
     res.status(500).json({ message: 'Error al asignar especialidades', error });
   }
 };
@@ -214,9 +223,15 @@ export const quitarEspecialidad = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    await (medico as any).removeEspecialidad(Number(req.params.idEsp));
+    await MedicoEspecialidad.destroy({
+      where: {
+        id_medico: req.params.id,
+        id_especialidad: req.params.idEsp,
+      },
+    });
     res.json({ message: 'Especialidad removida correctamente' });
   } catch (error) {
+    console.error('ERROR quitarEspecialidad:', error);
     res.status(500).json({ message: 'Error al quitar especialidad', error });
   }
 };
