@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import {
   Citas, Pacientes, Medicos, EstadoCitas,
-  Usuarios, Tratamientos, HorarioMedico
+  Usuarios, Tratamientos, HorarioMedico, CitasTratamientos
 } from '../models';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
@@ -76,7 +76,7 @@ export const obtenerCita = async (req: Request, res: Response): Promise<void> =>
         { model: Medicos, as: 'medico' },
         { model: EstadoCitas, as: 'estado' },
         { model: Usuarios, as: 'recepcionista', attributes: ['nombre_usuario'] },
-        { model: Tratamientos, as: 'tratamientos', through: { attributes: [] } },
+        { model: Tratamientos, as: 'tratamientos', through: { attributes: ['observacion'] } },
       ],
     });
 
@@ -270,17 +270,21 @@ export const asignarTratamientos = async (req: Request, res: Response): Promise<
       return;
     }
 
-    //eliminar tratamientos anteriores y agregar los nuevos
-    await (cita as any).setTratamientos([]);
+    //eliminar tratamientos anteriores de la cita y agregar los nuevos
+    await CitasTratamientos.destroy({ where: { id_cita: req.params.id } });
 
-    for (const t of tratamientos) {
-      await (cita as any).addTratamiento(t.id_tratamiento, {
-        through: { observacion: t.observacion || null },
-      });
+    if (Array.isArray(tratamientos) && tratamientos.length > 0) {
+      const registros = tratamientos.map((t: any) => ({
+        id_cita: Number(req.params.id),
+        id_tratamiento: Number(t.id_tratamiento),
+        observacion: t.observacion || null,
+      }));
+      await CitasTratamientos.bulkCreate(registros);
     }
 
     res.json({ message: 'Tratamientos asignados correctamente' });
   } catch (error) {
+    console.error('ERROR asignarTratamientos:', error);
     res.status(500).json({ message: 'Error al asignar tratamientos', error });
   }
 };

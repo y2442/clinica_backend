@@ -21,6 +21,7 @@ import HorarioMedico from './horarios_medicos';
 import EstadoCitas from './estado_citas';
 import Citas from './citas';
 import Tratamientos from './tratamientos';
+import CitasTratamientos from './citas_tratamientos';
 
 // ─── Asociaciones ────────────────────────────────────────────
 
@@ -57,13 +58,13 @@ Citas.belongsTo(Usuarios, { foreignKey: 'id_usuario', as: 'recepcionista' });
 
 // Citas ↔ Tratamientos (muchos a muchos)
 Citas.belongsToMany(Tratamientos, {
-  through: 'citas_tratamientos',
+  through: CitasTratamientos,
   foreignKey: 'id_cita',
   otherKey: 'id_tratamiento',
   as: 'tratamientos',
 });
 Tratamientos.belongsToMany(Citas, {
-  through: 'citas_tratamientos',
+  through: CitasTratamientos,
   foreignKey: 'id_tratamiento',
   otherKey: 'id_cita',
   as: 'citas',
@@ -80,4 +81,5 @@ export {
   EstadoCitas,
   Citas,
   Tratamientos,
+  CitasTratamientos,
 };
